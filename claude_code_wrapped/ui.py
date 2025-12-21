@@ -95,13 +95,17 @@ def create_big_stat(value: str, label: str, color: str = COLORS["orange"]) -> Te
 
 
 def create_contribution_graph(daily_stats: dict, year: int) -> Panel:
-    """Create a GitHub-style contribution graph."""
+    """Create a GitHub-style contribution graph for the full year."""
     if not daily_stats:
         return Panel("No activity data", title="Activity", border_style=COLORS["gray"])
 
-    dates = sorted(daily_stats.keys())
-    start_date = datetime.strptime(dates[0], "%Y-%m-%d")
-    end_date = datetime.strptime(dates[-1], "%Y-%m-%d")
+    # Always show full year: Jan 1 to Dec 31 (or today if current year)
+    start_date = datetime(year, 1, 1)
+    today = datetime.now()
+    if year == today.year:
+        end_date = today
+    else:
+        end_date = datetime(year, 12, 31)
 
     max_count = max(s.message_count for s in daily_stats.values()) if daily_stats else 1
 
@@ -140,9 +144,17 @@ def create_contribution_graph(daily_stats: dict, year: int) -> Panel:
 
     content = Group(graph, Align.center(legend))
 
+    # Calculate total days for context
+    today = datetime.now()
+    if year == today.year:
+        total_days = (today - datetime(year, 1, 1)).days + 1
+    else:
+        total_days = 366 if year % 4 == 0 else 365
+    active_count = len([d for d in daily_stats.values() if d.message_count > 0])
+
     return Panel(
         Align.center(content),
-        title=f"Activity · {len([d for d in daily_stats.values() if d.message_count > 0])} active days",
+        title=f"Activity · {active_count} of {total_days} days",
         border_style=Style(color=COLORS["green"]),
         padding=(0, 2),
     )
@@ -372,18 +384,24 @@ def create_credits_roll(stats: WrappedStats) -> list[Text]:
     numbers.append("    [ENTER]", style=Style(color=COLORS["dark"]))
     frames.append(numbers)
 
-    # Frame 2: Timeline
+    # Frame 2: Timeline (full year context)
     timeline = Text()
     timeline.append("\n\n\n")
     timeline.append("              T I M E L I N E\n\n", style=Style(color=COLORS["orange"], bold=True))
+    timeline.append("              Year           ", style=Style(color=COLORS["white"], bold=True))
+    timeline.append(f"{stats.year}\n", style=Style(color=COLORS["orange"], bold=True))
     if stats.first_message_date:
-        timeline.append("              First message  ", style=Style(color=COLORS["white"], bold=True))
-        timeline.append(f"{stats.first_message_date.strftime('%B %d, %Y')}\n", style=Style(color=COLORS["gray"]))
-    if stats.last_message_date:
-        timeline.append("              Last message   ", style=Style(color=COLORS["white"], bold=True))
-        timeline.append(f"{stats.last_message_date.strftime('%B %d, %Y')}\n", style=Style(color=COLORS["gray"]))
+        timeline.append("              Journey started ", style=Style(color=COLORS["white"], bold=True))
+        timeline.append(f"{stats.first_message_date.strftime('%B %d')}\n", style=Style(color=COLORS["gray"]))
+    # Calculate total days in year (up to today if current year)
+    today = datetime.now()
+    if stats.year == today.year:
+        total_days = (today - datetime(stats.year, 1, 1)).days + 1
+    else:
+        total_days = 366 if stats.year % 4 == 0 else 365
     timeline.append(f"\n              Active days    ", style=Style(color=COLORS["white"], bold=True))
-    timeline.append(f"{stats.active_days}\n", style=Style(color=COLORS["orange"], bold=True))
+    timeline.append(f"{stats.active_days}", style=Style(color=COLORS["orange"], bold=True))
+    timeline.append(f" of {total_days}\n", style=Style(color=COLORS["gray"]))
     if stats.most_active_hour is not None:
         hour_label = "AM" if stats.most_active_hour < 12 else "PM"
         hour_12 = stats.most_active_hour % 12 or 12
