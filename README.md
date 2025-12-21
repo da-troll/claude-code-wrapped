@@ -20,6 +20,9 @@ Your year with Claude Code, Spotify Wrapped style.
 # Using uvx (recommended)
 uvx claude-code-wrapped
 
+# Using npx
+npx claude-code-wrapped
+
 # Or install via pip
 pip install claude-code-wrapped
 claude-code-wrapped
@@ -62,7 +65,8 @@ claude-code-wrapped 2024         # View a specific year
 
 ## Requirements
 
-- Python 3.12+
+- Python 3.12+ (with uvx, pipx, or pip)
+- Or Node.js 16+ (for npx)
 - Claude Code installed (`~/.claude/` directory exists)
 
 ## How It Works

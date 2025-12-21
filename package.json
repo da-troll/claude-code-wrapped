@@ -1,0 +1,33 @@
+{
+  "name": "claude-code-wrapped",
+  "version": "0.1.1",
+  "description": "Your year with Claude Code - Spotify Wrapped style terminal experience",
+  "bin": {
+    "claude-code-wrapped": "./bin/cli.js"
+  },
+  "scripts": {
+    "start": "node bin/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/The-Money-Company-Limited/claudecodewrapped.git"
+  },
+  "keywords": [
+    "claude",
+    "anthropic",
+    "cli",
+    "wrapped",
+    "stats",
+    "terminal",
+    "claude-code"
+  ],
+  "author": "Mert Deveci",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/The-Money-Company-Limited/claudecodewrapped/issues"
+  },
+  "homepage": "https://github.com/The-Money-Company-Limited/claudecodewrapped#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
