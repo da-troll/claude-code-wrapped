@@ -60,7 +60,7 @@ Press `Enter` to advance through your personalized stats.
 claude-code-wrapped              # Full cinematic experience
 claude-code-wrapped --no-animate # Skip to dashboard view
 claude-code-wrapped --json       # Export stats as JSON
-claude-code-wrapped 2024         # View a specific year
+claude-code-wrapped 2025         # View a specific year
 ```
 
 ## Requirements

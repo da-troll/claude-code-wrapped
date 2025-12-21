@@ -19,7 +19,7 @@ def main():
         epilog="""
 Examples:
   claude-code-wrapped              Show your wrapped for current year
-  claude-code-wrapped 2024         Show your 2024 wrapped
+  claude-code-wrapped 2025         Show your 2025 wrapped
   claude-code-wrapped --no-animate Skip animations
         """,
     )
