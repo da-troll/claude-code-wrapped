@@ -14,13 +14,18 @@
 
 Your year with Claude Code, Spotify Wrapped style.
 
-## Quick Start
+## Installation
 
 ```bash
+# Using uvx (recommended)
 uvx claude-code-wrapped
+
+# Or install via pip
+pip install claude-code-wrapped
+claude-code-wrapped
 ```
 
-That's it. Press `Enter` to advance through your personalized stats.
+Press `Enter` to advance through your personalized stats.
 
 ## What You'll See
 
@@ -71,10 +76,19 @@ Reads your local Claude Code conversation history from `~/.claude/projects/` and
 
 All data stays local. Nothing is sent anywhere.
 
+## Privacy
+
+This tool is completely local and privacy-focused:
+
+- **No network requests** - All data is read from your local `~/.claude/` directory
+- **No data collection** - Nothing is sent to any server
+- **No API keys needed** - Works entirely offline
+- **No secrets exposed** - Only aggregated stats are shown, not conversation content
+
 ## Author
 
 Built by [Mert Deveci](https://x.com/gm_mertd), Maker of [Banker.so](https://banker.so)
 
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE) for details.
