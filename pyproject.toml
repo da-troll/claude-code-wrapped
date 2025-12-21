@@ -24,8 +24,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/mertdeveci/claude-code-wrapped"
-Repository = "https://github.com/mertdeveci/claude-code-wrapped"
+Homepage = "https://github.com/The-Money-Company-Limited/claudecodewrapped"
+Repository = "https://github.com/The-Money-Company-Limited/claudecodewrapped"
 
 [project.scripts]
 claude-code-wrapped = "claude_code_wrapped.main:main"
