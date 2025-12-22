@@ -475,23 +475,7 @@ def create_credits_roll(stats: WrappedStats) -> list[Text]:
     averages.append("    [ENTER]", style=Style(color=COLORS["dark"]))
     frames.append(averages)
 
-    # Frame 4: Code Activity
-    code_activity = Text()
-    code_activity.append("\n\n\n")
-    code_activity.append("              C O D E   A C T I V I T Y\n\n", style=Style(color=COLORS["orange"], bold=True))
-    total_code_changes = stats.total_edits + stats.total_writes
-    code_activity.append("              File Changes\n", style=Style(color=COLORS["white"], bold=True))
-    code_activity.append(f"                Edits:  {stats.total_edits:,}\n", style=Style(color=COLORS["gray"]))
-    code_activity.append(f"                Writes: {stats.total_writes:,}\n", style=Style(color=COLORS["gray"]))
-    code_activity.append(f"                Total:  {total_code_changes:,}\n", style=Style(color=COLORS["orange"], bold=True))
-    code_activity.append("\n              Averages\n", style=Style(color=COLORS["white"], bold=True))
-    code_activity.append(f"                Per day:  {stats.avg_edits_per_day:.1f}\n", style=Style(color=COLORS["gray"]))
-    code_activity.append(f"                Per week: {stats.avg_edits_per_week:.1f}\n", style=Style(color=COLORS["gray"]))
-    code_activity.append("\n\n")
-    code_activity.append("    [ENTER]", style=Style(color=COLORS["dark"]))
-    frames.append(code_activity)
-
-    # Frame 5: Longest Conversation
+    # Frame 4: Longest Conversation
     if stats.longest_conversation_messages > 0:
         longest = Text()
         longest.append("\n\n\n")
