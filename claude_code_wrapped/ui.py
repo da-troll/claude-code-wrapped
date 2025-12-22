@@ -52,7 +52,7 @@ def wait_for_keypress():
         return '\n'
 
 
-def create_dramatic_stat(value: str, label: str, subtitle: str = "", color: str = COLORS["orange"]) -> Text:
+def create_dramatic_stat(value: str, label: str, subtitle: str = "", color: str = COLORS["orange"], extra_lines: list[tuple[str, str]] = None) -> Text:
     """Create a dramatic full-screen stat reveal."""
     text = Text()
     text.append("\n\n\n\n\n")
@@ -60,6 +60,10 @@ def create_dramatic_stat(value: str, label: str, subtitle: str = "", color: str 
     text.append(f"{label}\n\n", style=Style(color=COLORS["white"], bold=True))
     if subtitle:
         text.append(subtitle, style=Style(color=COLORS["gray"]))
+    if extra_lines:
+        text.append("\n\n")
+        for line, line_color in extra_lines:
+            text.append(f"{line}\n", style=Style(color=line_color))
     text.append("\n\n\n\n")
     text.append("press [ENTER] to continue", style=Style(color=COLORS["dark"]))
     return text
@@ -277,12 +281,12 @@ def determine_personality(stats: WrappedStats) -> dict:
 
 
 def get_fun_facts(stats: WrappedStats) -> list[tuple[str, str]]:
-    """Generate fun facts / bloopers based on stats."""
+    """Generate fun facts / bloopers based on stats - only 3 key facts."""
     facts = []
 
-    # Late night coding
+    # Late night coding (midnight to 5am)
     late_night = sum(stats.hourly_distribution[0:5])
-    if late_night > 100:
+    if late_night > 0:
         facts.append(("🌙", f"You coded after midnight {late_night:,} times. Sleep is overrated."))
 
     # Most active day insight
@@ -290,35 +294,11 @@ def get_fun_facts(stats: WrappedStats) -> list[tuple[str, str]]:
         day_name = stats.most_active_day[0].strftime("%A")
         facts.append(("📅", f"Your biggest day was a {day_name}. {stats.most_active_day[1]:,} messages. Epic."))
 
-    # Tool obsession
-    if stats.top_tools:
-        top_tool, count = stats.top_tools[0]
-        facts.append(("🔧", f"You used {top_tool} {count:,} times. It's basically muscle memory now."))
-
-    # If they use Opus a lot
-    opus_count = stats.models_used.get("Opus", 0)
-    if opus_count > 1000:
-        facts.append(("🎭", f"You summoned Opus {opus_count:,} times. Only the best for you."))
-
     # Streak fact
-    if stats.streak_longest >= 7:
+    if stats.streak_longest >= 1:
         facts.append(("🔥", f"Your {stats.streak_longest}-day streak was legendary. Consistency wins."))
 
-    # Multi-project
-    if stats.total_projects >= 3:
-        facts.append(("🏗️", f"You juggled {stats.total_projects} projects. Multitasking champion."))
-
-    # Token usage perspective
-    if stats.total_tokens > 1_000_000_000:
-        books = stats.total_tokens // 100_000  # ~100k tokens per book
-        facts.append(("📚", f"You processed enough tokens for ~{books:,} books. Wow."))
-
-    # Weekend warrior
-    weekend = stats.weekday_distribution[5] + stats.weekday_distribution[6]
-    if weekend > 1000:
-        facts.append(("🏖️", f"Even weekends weren't safe. {weekend:,} weekend messages."))
-
-    return facts[:5]  # Limit to 5 facts
+    return facts
 
 
 def create_fun_facts_slide(facts: list[tuple[str, str]]) -> Text:
@@ -595,29 +575,72 @@ def render_wrapped(stats: WrappedStats, console: Console | None = None, animate:
         wait_for_keypress()
         console.clear()
 
-        # Dramatic stat reveals
-        slides = [
-            (f"{stats.total_messages:,}", "MESSAGES", "conversations with Claude", COLORS["orange"]),
-            (str(stats.total_sessions), "SESSIONS", "coding adventures", COLORS["purple"]),
-            (format_tokens(stats.total_tokens), "TOKENS", "processed through the AI", COLORS["green"]),
-            (f"{stats.streak_longest}", "DAY STREAK", "your longest run", COLORS["blue"]),
-        ]
+        # Slide 1: Messages with date range
+        first_date = stats.first_message_date.strftime("%d %B") if stats.first_message_date else "the beginning"
+        last_date = stats.last_message_date.strftime("%d %B %Y") if stats.last_message_date else "today"
+        messages_subtitle = f"From {first_date} to {last_date}"
+        console.print(Align.center(create_dramatic_stat(
+            f"{stats.total_messages:,}", "MESSAGES", messages_subtitle, COLORS["orange"]
+        )))
+        wait_for_keypress()
+        console.clear()
 
-        for value, label, subtitle, color in slides:
-            console.print(Align.center(create_dramatic_stat(value, label, subtitle, color)))
-            wait_for_keypress()
-            console.clear()
+        # Slide 2: Averages
+        from .pricing import format_cost
+        averages_text = Text()
+        averages_text.append("\n\n\n\n")
+        averages_text.append("On average, you sent\n\n", style=Style(color=COLORS["gray"]))
+        averages_text.append(f"{stats.avg_messages_per_day:.0f}", style=Style(color=COLORS["orange"], bold=True))
+        averages_text.append(" messages per day\n", style=Style(color=COLORS["white"]))
+        averages_text.append(f"{stats.avg_messages_per_week:.0f}", style=Style(color=COLORS["blue"], bold=True))
+        averages_text.append(" messages per week\n", style=Style(color=COLORS["white"]))
+        averages_text.append(f"{stats.avg_messages_per_month:.0f}", style=Style(color=COLORS["purple"], bold=True))
+        averages_text.append(" messages per month\n\n", style=Style(color=COLORS["white"]))
+        if stats.estimated_cost is not None:
+            averages_text.append("Costing about ", style=Style(color=COLORS["gray"]))
+            averages_text.append(f"{format_cost(stats.avg_cost_per_day)}/day", style=Style(color=COLORS["green"], bold=True))
+            averages_text.append(f" · {format_cost(stats.avg_cost_per_week)}/week", style=Style(color=COLORS["green"]))
+            averages_text.append(f" · {format_cost(stats.avg_cost_per_month)}/month\n", style=Style(color=COLORS["green"]))
+        averages_text.append("\n\n\n")
+        averages_text.append("press [ENTER] to continue", style=Style(color=COLORS["dark"]))
+        console.print(Align.center(averages_text))
+        wait_for_keypress()
+        console.clear()
 
-        # Personality reveal
+        # Slide 3: Tokens
+        def format_tokens_dramatic(tokens: int) -> str:
+            if tokens >= 1_000_000_000:
+                return f"{tokens / 1_000_000_000:.1f} Bn"
+            if tokens >= 1_000_000:
+                return f"{tokens / 1_000_000:.0f} M"
+            if tokens >= 1_000:
+                return f"{tokens / 1_000:.0f} K"
+            return str(tokens)
+
+        tokens_text = Text()
+        tokens_text.append("\n\n\n\n\n")
+        tokens_text.append("That's\n\n", style=Style(color=COLORS["gray"]))
+        tokens_text.append(f"{format_tokens_dramatic(stats.total_tokens)}\n", style=Style(color=COLORS["green"], bold=True))
+        tokens_text.append("TOKENS\n\n", style=Style(color=COLORS["white"], bold=True))
+        tokens_text.append("processed through the AI", style=Style(color=COLORS["gray"]))
+        tokens_text.append("\n\n\n\n")
+        tokens_text.append("press [ENTER] to continue", style=Style(color=COLORS["dark"]))
+        console.print(Align.center(tokens_text))
+        wait_for_keypress()
+        console.clear()
+
+        # Slide 4: Streak + Personality (merged)
         personality = determine_personality(stats)
-        personality_text = Text()
-        personality_text.append("\n\n\n\n")
-        personality_text.append(f"  {personality['emoji']}\n\n", style=Style(bold=True))
-        personality_text.append(f"  You are\n", style=Style(color=COLORS["gray"]))
-        personality_text.append(f"  {personality['title']}\n\n", style=Style(color=COLORS["purple"], bold=True))
-        personality_text.append(f"  {personality['description']}\n\n\n", style=Style(color=COLORS["white"]))
-        personality_text.append("  [ENTER]", style=Style(color=COLORS["dark"]))
-        console.print(Align.center(personality_text))
+        streak_text = Text()
+        streak_text.append("\n\n\n\n")
+        streak_text.append(f"{stats.streak_longest}\n", style=Style(color=COLORS["blue"], bold=True))
+        streak_text.append("DAY STREAK\n\n", style=Style(color=COLORS["white"], bold=True))
+        streak_text.append(f"{personality['emoji']}  ", style=Style(bold=True))
+        streak_text.append(f"{personality['title']}\n", style=Style(color=COLORS["purple"], bold=True))
+        streak_text.append(f"{personality['description']}\n", style=Style(color=COLORS["gray"]))
+        streak_text.append("\n\n\n")
+        streak_text.append("press [ENTER] to continue", style=Style(color=COLORS["dark"]))
+        console.print(Align.center(streak_text))
         wait_for_keypress()
         console.clear()
 
@@ -674,6 +697,10 @@ def render_wrapped(stats: WrappedStats, console: Console | None = None, animate:
         create_top_list(stats.top_projects, "Top Projects", COLORS["green"]),
     )
     console.print(lists)
+
+    # MCPs (if any)
+    if stats.top_mcps:
+        console.print(create_top_list(stats.top_mcps, "MCP Servers", COLORS["purple"]))
 
     # Monthly cost table
     if stats.monthly_costs:

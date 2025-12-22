@@ -87,6 +87,7 @@ Examples:
             "most_active_day_messages": stats.most_active_day[1] if stats.most_active_day else None,
             "primary_model": stats.primary_model,
             "top_tools": dict(stats.top_tools),
+            "top_mcps": dict(stats.top_mcps),
             "top_projects": dict(stats.top_projects),
             "hourly_distribution": stats.hourly_distribution,
             "weekday_distribution": stats.weekday_distribution,

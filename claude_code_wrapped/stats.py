@@ -52,6 +52,10 @@ class WrappedStats:
     tool_calls: Counter = field(default_factory=Counter)
     top_tools: list[tuple[str, int]] = field(default_factory=list)
 
+    # MCP server usage (extracted from mcp__server__tool format)
+    mcp_servers: Counter = field(default_factory=Counter)
+    top_mcps: list[tuple[str, int]] = field(default_factory=list)
+
     # Model usage
     models_used: Counter = field(default_factory=Counter)
     primary_model: str | None = None
@@ -279,9 +283,16 @@ def aggregate_stats(messages: list[Message], year: int) -> WrappedStats:
             if msg.session_id:
                 session_tokens[msg.session_id] += msg.usage.total_tokens
 
-        # Tool usage
+        # Tool usage (separate MCPs from regular tools)
         for tool in msg.tool_calls:
-            stats.tool_calls[tool] += 1
+            if tool.startswith("mcp__"):
+                # Extract MCP server name: mcp__servername__toolname -> servername
+                parts = tool.split("__")
+                if len(parts) >= 2:
+                    mcp_server = parts[1]
+                    stats.mcp_servers[mcp_server] += 1
+            else:
+                stats.tool_calls[tool] += 1
 
         # Time-based stats
         if msg.timestamp:
@@ -330,6 +341,9 @@ def aggregate_stats(messages: list[Message], year: int) -> WrappedStats:
 
     # Top tools
     stats.top_tools = stats.tool_calls.most_common(10)
+
+    # Top MCPs
+    stats.top_mcps = stats.mcp_servers.most_common(5)
 
     # Top projects
     stats.top_projects = projects.most_common(5)
