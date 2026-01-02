@@ -1,6 +1,6 @@
 [project]
 name = "claude-wrapped"
-version = "0.1.12"
+version = "0.1.13"
 description = "Your year with Claude Code - Spotify Wrapped style terminal experience"
 readme = "README.md"
 requires-python = ">=3.12"

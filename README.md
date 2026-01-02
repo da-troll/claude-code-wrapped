@@ -36,6 +36,8 @@ claude-wrapped
 
 The tool launches in **interactive mode** with arrow-key prompts to guide you through all options. Press `Enter` to advance through your personalized stats!
 
+> **☕ Pro tip:** Using Claude Code? Just paste this repo URL (`https://github.com/da-troll/claude-code-wrapped`) into your conversation and ask Claude to install and run it for you. Sit back, sip your coffee, and let Claude handle the setup while you wait for your stats. Meta, right? 😎
+
 ---
 
 ## ✨ Features
