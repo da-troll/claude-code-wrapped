@@ -23,8 +23,8 @@ class DailyStats:
 
 @dataclass
 class WrappedStats:
-    """Complete wrapped statistics for a year."""
-    year: int
+    """Complete wrapped statistics for a year or all-time."""
+    year: int | None  # None for all-time stats
 
     # Overall counts
     total_messages: int = 0
@@ -46,6 +46,8 @@ class WrappedStats:
     most_active_hour: int | None = None
     streak_longest: int = 0
     streak_current: int = 0
+    streak_longest_start: datetime | None = None
+    streak_longest_end: datetime | None = None
     active_days: int = 0
 
     # Tool usage
@@ -122,17 +124,51 @@ class WrappedStats:
 
 
 def extract_project_name(project_path: str | None) -> str:
-    """Extract a readable project name from a path."""
+    """Extract a readable project name from a path.
+
+    Handles common subdirectories by using the parent directory name
+    to aggregate related paths (e.g., /path/to/project/app and /path/to/project/src
+    both become 'project').
+    """
     if not project_path:
         return "Unknown"
-    # Get the last part of the path
-    parts = project_path.rstrip('/').split('/')
-    return parts[-1] if parts else "Unknown"
+
+    # Common subdirectory names that should be ignored in favor of parent
+    common_subdirs = {
+        'app', 'src', 'lib', 'dist', 'build', 'out', 'bin', 'target',
+        'test', 'tests', '__tests__', 'spec', 'specs',
+        'public', 'static', 'assets', 'resources',
+        'frontend', 'backend', 'api', 'server', 'client',
+        'packages', 'modules', 'components', 'utils', 'helpers',
+        'scripts', 'tools', 'config', 'configs',
+        'docs', 'documentation', 'examples',
+    }
+
+    # Split path and remove empty parts
+    parts = [p for p in project_path.rstrip('/').split('/') if p]
+
+    if not parts:
+        return "Unknown"
+
+    # If last part is a common subdirectory and we have a parent, use parent
+    if len(parts) >= 2 and parts[-1].lower() in common_subdirs:
+        return parts[-2]
+
+    # Otherwise use the last part
+    return parts[-1]
 
 
-def calculate_streaks(daily_stats: dict[str, DailyStats], year: int) -> tuple[int, int]:
-    """Calculate longest and current coding streaks."""
-    # Get all active dates in the year
+def calculate_streaks(daily_stats: dict[str, DailyStats], year: int | None) -> tuple[int, int, datetime | None, datetime | None]:
+    """Calculate longest and current coding streaks.
+
+    Args:
+        daily_stats: Dictionary of daily statistics
+        year: Year to analyze, or None for all-time
+
+    Returns:
+        Tuple of (longest_streak, current_streak, longest_start_date, longest_end_date)
+    """
+    # Get all active dates
     active_dates = set()
     for date_str, stats in daily_stats.items():
         if stats.message_count > 0:
@@ -142,35 +178,50 @@ def calculate_streaks(daily_stats: dict[str, DailyStats], year: int) -> tuple[in
                 continue
 
     if not active_dates:
-        return 0, 0
+        return 0, 0, None, None
 
     # Sort dates
     sorted_dates = sorted(active_dates)
 
-    # Calculate longest streak
+    # Calculate longest streak with date tracking
     longest_streak = 1
     current_streak = 1
+    longest_start_idx = 0
+    longest_end_idx = 0
+    current_start_idx = 0
 
     for i in range(1, len(sorted_dates)):
         if sorted_dates[i] - sorted_dates[i-1] == timedelta(days=1):
             current_streak += 1
-            longest_streak = max(longest_streak, current_streak)
+            if current_streak > longest_streak:
+                longest_streak = current_streak
+                longest_start_idx = current_start_idx
+                longest_end_idx = i
         else:
             current_streak = 1
+            current_start_idx = i
+
+    # Convert indices to datetime objects
+    longest_start = datetime.combine(sorted_dates[longest_start_idx], datetime.min.time())
+    longest_end = datetime.combine(sorted_dates[longest_end_idx], datetime.min.time())
 
     # Calculate current streak
     today = datetime.now().date()
     current = 0
 
     # For past years, current streak is meaningless, so return 0
-    # For current year, count back from today
-    if year < today.year:
-        return longest_streak, 0
+    # For all-time or current year, count back from today
+    if year is not None and year < today.year:
+        return longest_streak, 0, longest_start, longest_end
 
-    # Start from today for current year
+    # Start from today for current year or all-time
     check_date = today
 
-    while check_date >= datetime(year, 1, 1).date():
+    # For all-time, check back from today
+    # For specific year, only check within that year
+    min_date = datetime(year, 1, 1).date() if year else min(active_dates)
+
+    while check_date >= min_date:
         if check_date in active_dates:
             current += 1
             check_date -= timedelta(days=1)
@@ -180,11 +231,16 @@ def calculate_streaks(daily_stats: dict[str, DailyStats], year: int) -> tuple[in
         else:
             break
 
-    return longest_streak, current
+    return longest_streak, current, longest_start, longest_end
 
 
-def aggregate_stats(messages: list[Message], year: int) -> WrappedStats:
-    """Aggregate all messages into wrapped statistics."""
+def aggregate_stats(messages: list[Message], year: int | None) -> WrappedStats:
+    """Aggregate all messages into wrapped statistics.
+
+    Args:
+        messages: List of messages to aggregate
+        year: Year to analyze, or None for all-time stats
+    """
     stats = WrappedStats(year=year)
 
     if not messages:
@@ -366,7 +422,7 @@ def aggregate_stats(messages: list[Message], year: int) -> WrappedStats:
         stats.primary_model = stats.models_used.most_common(1)[0][0]
 
     # Streaks
-    stats.streak_longest, stats.streak_current = calculate_streaks(daily, year)
+    stats.streak_longest, stats.streak_current, stats.streak_longest_start, stats.streak_longest_end = calculate_streaks(daily, year)
 
     # Calculate estimated cost first (needed for averages)
     from .pricing import calculate_total_cost_by_model

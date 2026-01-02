@@ -36,6 +36,11 @@ def wait_for_keypress():
     return '\n'
 
 
+def format_year_display(year: int | None) -> str:
+    """Format year for display - returns 'All Time' if year is None."""
+    return "All Time" if year is None else str(year)
+
+
 def create_dramatic_stat(value: str, label: str, subtitle: str = "", color: str = COLORS["orange"], extra_lines: list[tuple[str, str]] = None) -> Text:
     """Create a dramatic full-screen stat reveal."""
     text = Text()
@@ -53,7 +58,7 @@ def create_dramatic_stat(value: str, label: str, subtitle: str = "", color: str 
     return text
 
 
-def create_title_slide(year: int) -> Text:
+def create_title_slide(year: int | None) -> Text:
     """Create the opening title."""
     title = Text()
     title.append("\n\n\n")
@@ -65,7 +70,8 @@ def create_title_slide(year: int) -> Text:
     title.append("  ░╚════╝░╚══════╝╚═╝░░╚═╝░╚═════╝░╚═════╝░╚══════╝\n", style=COLORS["orange"])
     title.append("\n")
     title.append("              C O D E   W R A P P E D\n", style=Style(color=COLORS["white"], bold=True))
-    title.append(f"                     {year}\n\n", style=Style(color=COLORS["purple"], bold=True))
+    year_display = format_year_display(year)
+    title.append(f"                  {year_display}\n\n", style=Style(color=COLORS["purple"], bold=True))
     title.append("                  by ", style=Style(color=COLORS["gray"]))
     title.append("Banker.so", style=Style(color=COLORS["blue"], bold=True, link="https://banker.so"))
     title.append("\n\n\n")
@@ -82,18 +88,25 @@ def create_big_stat(value: str, label: str, color: str = COLORS["orange"]) -> Te
     return text
 
 
-def create_contribution_graph(daily_stats: dict, year: int) -> Panel:
-    """Create a GitHub-style contribution graph for the full year."""
+def create_contribution_graph(daily_stats: dict, year: int | None) -> Panel:
+    """Create a GitHub-style contribution graph for the full year or all-time."""
     if not daily_stats:
         return Panel("No activity data", title="Activity", border_style=COLORS["gray"])
 
-    # Always show full year: Jan 1 to Dec 31 (or today if current year)
-    start_date = datetime(year, 1, 1)
-    today = datetime.now()
-    if year == today.year:
-        end_date = today
+    # Calculate date range
+    if year is None:
+        # All-time: use actual date range from daily_stats
+        dates = [datetime.strptime(d, "%Y-%m-%d") for d in daily_stats.keys()]
+        start_date = min(dates) if dates else datetime.now()
+        end_date = max(dates) if dates else datetime.now()
     else:
-        end_date = datetime(year, 12, 31)
+        # Always show full year: Jan 1 to Dec 31 (or today if current year)
+        start_date = datetime(year, 1, 1)
+        today = datetime.now()
+        if year == today.year:
+            end_date = today
+        else:
+            end_date = datetime(year, 12, 31)
 
     max_count = max(s.message_count for s in daily_stats.values()) if daily_stats else 1
 
@@ -134,7 +147,10 @@ def create_contribution_graph(daily_stats: dict, year: int) -> Panel:
 
     # Calculate total days for context
     today = datetime.now()
-    if year == today.year:
+    if year is None:
+        # All-time: calculate total days from date range
+        total_days = (end_date - start_date).days + 1
+    elif year == today.year:
         total_days = (today - datetime(year, 1, 1)).days + 1
     else:
         total_days = 366 if year % 4 == 0 else 365
@@ -417,14 +433,22 @@ def create_credits_roll(stats: WrappedStats) -> list[Text]:
     timeline = Text()
     timeline.append("\n\n\n")
     timeline.append("              T I M E L I N E\n\n", style=Style(color=COLORS["orange"], bold=True))
-    timeline.append("              Year           ", style=Style(color=COLORS["white"], bold=True))
-    timeline.append(f"{stats.year}\n", style=Style(color=COLORS["orange"], bold=True))
+    timeline.append("              Period         ", style=Style(color=COLORS["white"], bold=True))
+    # Use sentence case for "All time" in timeline
+    period_text = "All time" if stats.year is None else str(stats.year)
+    timeline.append(f"{period_text}\n", style=Style(color=COLORS["orange"], bold=True))
     if stats.first_message_date:
         timeline.append("              Journey started ", style=Style(color=COLORS["white"], bold=True))
-        timeline.append(f"{stats.first_message_date.strftime('%B %d')}\n", style=Style(color=COLORS["gray"]))
-    # Calculate total days in year (up to today if current year)
+        timeline.append(f"{stats.first_message_date.strftime('%B %d, %Y')}\n", style=Style(color=COLORS["gray"]))
+    # Calculate total days
     today = datetime.now()
-    if stats.year == today.year:
+    if stats.year is None:
+        # All-time: calculate days from first to last message
+        if stats.first_message_date and stats.last_message_date:
+            total_days = (stats.last_message_date - stats.first_message_date).days + 1
+        else:
+            total_days = stats.active_days
+    elif stats.year == today.year:
         total_days = (today - datetime(stats.year, 1, 1)).days + 1
     else:
         total_days = 366 if stats.year % 4 == 0 else 365
@@ -458,7 +482,23 @@ def create_credits_roll(stats: WrappedStats) -> list[Text]:
     averages.append("    [ENTER]", style=Style(color=COLORS["dark"]))
     frames.append(averages)
 
-    # Frame 4: Longest Conversation
+    # Frame 4: Longest Streak (if significant)
+    if stats.streak_longest >= 3 and stats.streak_longest_start and stats.streak_longest_end:
+        streak = Text()
+        streak.append("\n\n\n")
+        streak.append("              L O N G E S T   S T R E A K\n\n", style=Style(color=COLORS["blue"], bold=True))
+        streak.append(f"              {stats.streak_longest}", style=Style(color=COLORS["blue"], bold=True))
+        streak.append(" days of consistent coding\n\n", style=Style(color=COLORS["white"], bold=True))
+        streak.append(f"              From  ", style=Style(color=COLORS["white"], bold=True))
+        streak.append(f"{stats.streak_longest_start.strftime('%B %d, %Y')}\n", style=Style(color=COLORS["gray"]))
+        streak.append(f"              To    ", style=Style(color=COLORS["white"], bold=True))
+        streak.append(f"{stats.streak_longest_end.strftime('%B %d, %Y')}\n", style=Style(color=COLORS["gray"]))
+        streak.append("\n              Consistency is the key to mastery.\n", style=Style(color=COLORS["gray"]))
+        streak.append("\n\n")
+        streak.append("    [ENTER]", style=Style(color=COLORS["dark"]))
+        frames.append(streak)
+
+    # Frame 5: Longest Conversation
     if stats.longest_conversation_messages > 0:
         longest = Text()
         longest.append("\n\n\n")
@@ -487,7 +527,7 @@ def create_credits_roll(stats: WrappedStats) -> list[Text]:
     cast.append("    [ENTER]", style=Style(color=COLORS["dark"]))
     frames.append(cast)
 
-    # Frame 6: Projects
+    # Frame 7: Projects
     if stats.top_projects:
         projects = Text()
         projects.append("\n\n\n")
@@ -499,11 +539,14 @@ def create_credits_roll(stats: WrappedStats) -> list[Text]:
         projects.append("    [ENTER]", style=Style(color=COLORS["dark"]))
         frames.append(projects)
 
-    # Frame 5: Final card
+    # Frame 8: Final card
     final = Text()
     final.append("\n\n\n\n")
-    final.append("              See you in ", style=Style(color=COLORS["gray"]))
-    final.append(f"{stats.year + 1}", style=Style(color=COLORS["orange"], bold=True))
+    if stats.year is not None:
+        final.append("              See you in ", style=Style(color=COLORS["gray"]))
+        final.append(f"{stats.year + 1}", style=Style(color=COLORS["orange"], bold=True))
+    else:
+        final.append("              Keep coding!", style=Style(color=COLORS["orange"], bold=True))
     final.append("\n\n\n\n", style=Style(color=COLORS["gray"]))
     final.append("              ", style=Style())
     final.append("Banker.so", style=Style(color=COLORS["blue"], bold=True, link="https://banker.so"))
@@ -523,9 +566,10 @@ def render_wrapped(stats: WrappedStats, console: Console | None = None, animate:
     if animate:
         # Loading
         console.clear()
+        loading_text = "Unwrapping your history..." if stats.year is None else "Unwrapping your year..."
         with Progress(
             SpinnerColumn(style=COLORS["orange"]),
-            TextColumn("[bold]Unwrapping your year...[/bold]"),
+            TextColumn(f"[bold]{loading_text}[/bold]"),
             BarColumn(complete_style=COLORS["orange"], finished_style=COLORS["green"]),
             console=console,
             transient=True,
@@ -618,7 +662,7 @@ def render_wrapped(stats: WrappedStats, console: Console | None = None, animate:
     header = Text()
     header.append("═" * 60 + "\n", style=Style(color=COLORS["orange"]))
     header.append("  CLAUDE CODE WRAPPED ", style=Style(color=COLORS["white"], bold=True))
-    header.append(str(stats.year), style=Style(color=COLORS["orange"], bold=True))
+    header.append(format_year_display(stats.year), style=Style(color=COLORS["orange"], bold=True))
     header.append("\n" + "═" * 60, style=Style(color=COLORS["orange"]))
     console.print(Align.center(header))
     console.print()

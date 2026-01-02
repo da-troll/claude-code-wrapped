@@ -3,12 +3,14 @@
 import argparse
 import sys
 from datetime import datetime
+from pathlib import Path
 
 from rich.console import Console
 
 from .reader import get_claude_dir, load_all_messages
 from .stats import aggregate_stats
 from .ui import render_wrapped
+from .exporters import export_to_html, export_to_markdown
 
 
 def main():
@@ -18,17 +20,21 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  claude-code-wrapped              Show your wrapped for current year
-  claude-code-wrapped 2025         Show your 2025 wrapped
-  claude-code-wrapped --no-animate Skip animations
+  claude-code-wrapped                Show your wrapped for current year
+  claude-code-wrapped 2025           Show your 2025 wrapped
+  claude-code-wrapped all            Show your all-time wrapped
+  claude-code-wrapped --no-animate   Skip animations
+  claude-code-wrapped --html         Export to HTML file
+  claude-code-wrapped --markdown     Export to Markdown file
+  claude-code-wrapped all --html --markdown  Export all-time stats to both formats
         """,
     )
     parser.add_argument(
         "year",
-        type=int,
+        type=str,
         nargs="?",
-        default=datetime.now().year,
-        help="Year to analyze (default: current year)",
+        default=str(datetime.now().year),
+        help="Year to analyze or 'all' for all-time stats (default: current year)",
     )
     parser.add_argument(
         "--no-animate",
@@ -40,9 +46,38 @@ Examples:
         action="store_true",
         help="Output raw stats as JSON",
     )
+    parser.add_argument(
+        "--html",
+        action="store_true",
+        help="Export to HTML file",
+    )
+    parser.add_argument(
+        "--markdown",
+        action="store_true",
+        help="Export to Markdown file",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        help="Custom output filename (without extension)",
+    )
 
     args = parser.parse_args()
     console = Console()
+
+    # Parse year argument
+    if args.year.lower() == "all":
+        year_filter = None
+        year_display = "all-time"
+        year_label = "All Time"
+    else:
+        try:
+            year_filter = int(args.year)
+            year_display = str(year_filter)
+            year_label = str(year_filter)
+        except ValueError:
+            console.print(f"[red]Error:[/red] Invalid year '{args.year}'. Use a year (e.g., 2025) or 'all'.")
+            sys.exit(1)
 
     # Check for Claude directory
     try:
@@ -54,17 +89,40 @@ Examples:
 
     # Load messages
     if not args.json:
-        console.print(f"\n[dim]Loading your Claude Code history for {args.year}...[/dim]\n")
+        console.print(f"\n[dim]Loading your Claude Code history for {year_label}...[/dim]\n")
 
-    messages = load_all_messages(claude_dir, year=args.year)
+    messages = load_all_messages(claude_dir, year=year_filter)
 
     if not messages:
-        console.print(f"[yellow]No Claude Code activity found for {args.year}.[/yellow]")
+        console.print(f"[yellow]No Claude Code activity found for {year_label}.[/yellow]")
         console.print("\nTry a different year or make sure you've used Claude Code.")
         sys.exit(0)
 
     # Calculate stats
-    stats = aggregate_stats(messages, args.year)
+    stats = aggregate_stats(messages, year_filter)
+
+    # Generate timestamp for filenames
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M")
+
+    # Export to HTML if requested
+    if args.html:
+        if args.output:
+            output_name = args.output
+        else:
+            output_name = f"claude-wrapped-{year_display}-{timestamp}"
+        html_path = Path(f"{output_name}.html")
+        export_to_html(stats, year_filter, html_path)
+        console.print(f"\n[green]✓[/green] Exported to [bold]{html_path}[/bold]")
+
+    # Export to Markdown if requested
+    if args.markdown:
+        if args.output:
+            output_name = args.output
+        else:
+            output_name = f"claude-wrapped-{year_display}-{timestamp}"
+        md_path = Path(f"{output_name}.md")
+        export_to_markdown(stats, year_filter, md_path)
+        console.print(f"\n[green]✓[/green] Exported to [bold]{md_path}[/bold]")
 
     # Output
     if args.json:
