@@ -8,116 +8,339 @@
   ╚█████╔╝███████╗██║░░██║╚██████╔╝██████╔╝███████╗
   ░╚════╝░╚══════╝╚═╝░░╚═╝░╚═════╝░╚═════╝░╚══════╝
 
-            C O D E   W R A P P E D   2025
+            C O D E   W R A P P E D
                     by Banker.so
 ```
 
-Your year with Claude Code, Spotify Wrapped style.
+**Your year with Claude Code, Spotify Wrapped style.** ✨
 
-## Installation
+A beautiful terminal experience that analyzes your local Claude Code conversation history and presents your coding year in a cinematic, Spotify Wrapped-inspired format.
+
+---
+
+## 🚀 Quick Start
 
 ```bash
-# Using uvx (recommended)
+# Using uvx (recommended - no install needed)
 uvx claude-code-wrapped
 
-# Using npx
+# Using npx (Node.js)
 npx claude-code-wrapped
 
-# Or install via pip
+# Or install globally
 pip install claude-code-wrapped
 claude-code-wrapped
 ```
 
-Press `Enter` to advance through your personalized stats.
+Press `Enter` to advance through your personalized stats!
 
-## What You'll See
+---
 
-**Dramatic stat reveals** - one at a time, like Spotify Wrapped:
-- Total messages exchanged
-- Coding sessions
-- Tokens processed
-- Your longest streak
+## ✨ Features
 
-**GitHub-style contribution graph** - see your coding patterns at a glance
+### 📊 Comprehensive Stats
+- **Total messages** exchanged with Claude
+- **Coding sessions** and project counts
+- **Tokens processed** (input, output, cache)
+- **Cost estimates** based on official Anthropic pricing
+- **Longest coding streak** with start and end dates
+- **Current streak** to keep you motivated
 
-**Your coding personality** - based on your habits:
-- 🦉 Night Owl
-- 🔥 Streak Master
-- ⚡ Terminal Warrior
-- 🎨 The Refactorer
-- 🚀 Empire Builder
-- 🌙 Weekend Warrior
-- 🎯 Perfectionist
-- 💻 Dedicated Dev
+### 🎬 Cinematic Experience
+- **Dramatic reveals** - Stats appear one at a time, Spotify Wrapped style
+- **GitHub-style contribution graph** - Visualize your coding patterns
+- **Movie-style credits** - Featuring your top tools, projects, and models
+- **Fun facts & insights** - Like "You coded after midnight 47 times"
 
-**Fun facts & bloopers** - like "You coded after midnight 47 times"
+### 🎭 Personality Types
+Based on your coding habits, discover your type:
+- 🦉 **Night Owl** - The quiet hours are your sanctuary
+- 🔥 **Streak Master** - Consistency is your superpower
+- ⚡ **Terminal Warrior** - Command line is your domain
+- 🎨 **The Refactorer** - You see beauty in clean code
+- 🚀 **Empire Builder** - Building across multiple projects
+- 🌙 **Weekend Warrior** - Passion fuels your weekends
+- 🎯 **Perfectionist** - Only the best will do
+- 💻 **Dedicated Dev** - Steady and reliable
 
-**Movie-style credits** - featuring your top tools, projects, and models
+### 📤 Export Options
+- **HTML export** - Beautiful web page with interactive graphs
+- **Markdown export** - Clean, readable format for sharing
+- **JSON export** - Raw data for your own analysis
+- **Timestamped filenames** - Never overwrite previous exports
 
-## Options
+---
+
+## 🎯 Usage
+
+### Basic Commands
 
 ```bash
-claude-code-wrapped              # Full cinematic experience
-claude-code-wrapped --no-animate # Skip to dashboard view
-claude-code-wrapped --json       # Export stats as JSON
-claude-code-wrapped 2025         # View a specific year
+# Full cinematic experience (default)
+claude-code-wrapped
+
+# Skip animations, go straight to dashboard
+claude-code-wrapped --no-animate
+
+# View a specific year
+claude-code-wrapped 2025
+
+# All-time statistics
+claude-code-wrapped all
+
+# Export to HTML
+claude-code-wrapped --html
+
+# Export to Markdown
+claude-code-wrapped --markdown
+
+# All-time stats with exports
+claude-code-wrapped all --html --markdown
+
+# Export raw data as JSON
+claude-code-wrapped --json
 ```
 
-## Including Backup Directories
-
-Have Claude Code backups in Dropbox, external drives, or exported conversations? Include them:
+### Custom Output Filename
 
 ```bash
-# Create a .env file
+# Custom filename (without extension)
+claude-code-wrapped --html --output my-wrapped-2025
+# Creates: my-wrapped-2025.html
+
+# Default timestamped filenames
+claude-code-wrapped --html
+# Creates: claude-wrapped-2025-20260102-1430.html
+```
+
+---
+
+## 💾 Including Backup Directories
+
+Have Claude Code backups in Dropbox, external drives, or exported conversations? Include them all:
+
+### Setup
+
+```bash
+# 1. Create a .env file
 cp .env.example .env
 
-# Edit .env and add your backup locations (comma-separated)
-CLAUDE_BACKUP_DIRS=~/Dropbox/claude-backups/.claude,~/exported-chats
+# 2. Edit .env and add your backup locations (comma-separated)
+CLAUDE_BACKUP_DIRS=~/Dropbox/claude-backups/.claude,~/exported-chats,/Volumes/backup/.claude
 
-# Run as normal - automatically combines all data
+# 3. Run as normal - automatically combines all data
 claude-code-wrapped
 ```
 
-**Supported directory structures (auto-detected):**
-- **Standard**: `backup-dir/projects/[project-folders]/*.jsonl` (has `projects/` subdirectory)
-- **Projects folder**: `projects/[project-folders]/*.jsonl` (IS the projects folder)
-- **Flat**: `backup-dir/*.jsonl` (JSONL files directly in directory)
+### Supported Directory Structures
 
-**Deduplication:**
+The tool auto-detects three different directory layouts:
+
+#### 1. Standard `~/.claude` Structure
+```
+backup-dir/
+├── projects/
+│   └── -Users-you-code-project/
+│       └── session-uuid.jsonl
+└── history.jsonl (optional)
+```
+
+#### 2. Projects Folder
+```
+projects-dir/
+├── -Users-you-code-project1/
+│   └── session.jsonl
+└── -Users-you-code-project2/
+    └── session.jsonl
+```
+
+#### 3. Flat Structure
+```
+backup-dir/
+├── session1.jsonl
+├── session2.jsonl
+└── session3.jsonl
+```
+
+### Deduplication
+
 - Messages are automatically deduplicated by `message_id`
 - **Order matters**: Later directories override earlier ones for duplicates
-- List most authoritative/complete sources **last** (e.g., pre-compaction backups)
+- List most authoritative/complete sources **last**
 
-## Requirements
+**Example:**
+```bash
+# CORRECT: Pre-compaction backups listed last (highest priority)
+CLAUDE_BACKUP_DIRS=~/.claude/backups/old,~/external-drive/pre-compaction
 
-- Python 3.12+ (with uvx, pipx, or pip)
-- Or Node.js 16+ (for npx)
-- Claude Code installed (`~/.claude/` directory exists)
+# WRONG: Pre-compaction backups will be overridden
+CLAUDE_BACKUP_DIRS=~/external-drive/pre-compaction,~/.claude/backups/old
+```
 
-## How It Works
+---
+
+## 📋 Requirements
+
+- **Python 3.12+** (with uvx, pipx, or pip)
+- **Or Node.js 16+** (for npx)
+- **Claude Code installed** (`~/.claude/` directory exists)
+
+---
+
+## 🔒 Privacy
+
+This tool is **100% local and private**:
+
+- ✅ **No network requests** - All data read from local `~/.claude/` directory
+- ✅ **No data collection** - Nothing sent to any server
+- ✅ **No API keys needed** - Works entirely offline
+- ✅ **No secrets exposed** - Only aggregated stats shown, not conversation content
+- ✅ **Open source** - Inspect the code yourself
+
+Your conversations never leave your machine.
+
+---
+
+## 🎨 What You'll See
+
+### Dashboard View
+```
+════════════════════════════════════════════════════════
+  CLAUDE CODE WRAPPED 2025
+════════════════════════════════════════════════════════
+
+   71,108         263          2.9B           40d
+  messages      sessions      tokens      best streak
+
+╭────────────────── Activity · 90 of 365 days ──────────╮
+│  Mon ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■    │
+│      ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■    │
+│  Wed ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■    │
+│                                                        │
+│                 Less ■ ■ ■ ■ ■ More                   │
+╰────────────────────────────────────────────────────────╯
+```
+
+### Credits Sequence
+- 💵 **THE NUMBERS** - Cost breakdown by model, total tokens
+- 📅 **TIMELINE** - Journey start, active days, peak coding hour
+- 📊 **AVERAGES** - Messages and cost per day/week/month
+- 🔥 **LONGEST STREAK** - Your best consecutive coding days with dates
+- 💬 **LONGEST CONVERSATION** - Your epic coding session stats
+- ⭐ **STARRING** - Your favorite Claude models
+- 📁 **PROJECTS** - Top projects by message count
+
+---
+
+## 🛠️ How It Works
 
 Reads your local Claude Code conversation history from `~/.claude/projects/` and aggregates:
-- Message counts and timestamps
-- Token usage (input, output, cache)
-- Tool usage (Bash, Read, Edit, etc.)
-- Model preferences (Opus, Sonnet, Haiku)
-- Project activity
 
-All data stays local. Nothing is sent anywhere.
+- **Message counts** and timestamps
+- **Token usage** (input, output, cache reads/writes)
+- **Tool usage** (Bash, Read, Edit, Grep, etc.)
+- **MCP server usage** (extracted from tool names)
+- **Model preferences** (Opus, Sonnet, Haiku)
+- **Project activity** (intelligently aggregates common subdirectories)
+- **Coding patterns** (hourly distribution, weekday patterns, streaks)
+- **Cost estimates** (based on official Anthropic API pricing)
 
-## Privacy
+### Intelligent Project Aggregation
 
-This tool is completely local and privacy-focused:
+The tool recognizes common subdirectories and aggregates them properly:
 
-- **No network requests** - All data is read from your local `~/.claude/` directory
-- **No data collection** - Nothing is sent to any server
-- **No API keys needed** - Works entirely offline
-- **No secrets exposed** - Only aggregated stats are shown, not conversation content
+```python
+# Both of these become "my-project":
+/Users/you/code/my-project/app
+/Users/you/code/my-project/src
 
-## Author
+# Common subdirectories recognized:
+app, src, lib, frontend, backend, api, server, client,
+test, tests, public, static, dist, build, etc.
+```
 
-Built by [Mert Deveci](https://x.com/gm_mertd), Maker of [Banker.so](https://banker.so)
+---
 
-## License
+## 📦 Installation Methods
+
+### uvx (Recommended)
+```bash
+uvx claude-code-wrapped
+```
+No installation needed, always uses latest version.
+
+### npx (Node.js)
+```bash
+npx claude-code-wrapped
+```
+Works if you have Node.js installed.
+
+### pip (Global Install)
+```bash
+pip install claude-code-wrapped
+claude-code-wrapped
+```
+
+### pipx (Isolated Install)
+```bash
+pipx install claude-code-wrapped
+claude-code-wrapped
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! This project is open source and community-driven.
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/da-troll/claude-code-wrapped.git
+cd claude-code-wrapped
+
+# Install dependencies with uv
+uv sync
+
+# Run from source
+uv run python -m claude_code_wrapped
+
+# Run tests
+uv run python -m claude_code_wrapped.reader
+uv run python -m claude_code_wrapped.stats
+```
+
+---
+
+## 👏 Credits
+
+**Original Creator:** [Mert Deveci](https://x.com/gm_mertd) - Maker of [Banker.so](https://banker.so)
+**Fork Maintainer:** [Daniel Tollefsen](https://github.com/da-troll)
+
+### Recent Enhancements
+- All-time statistics support
+- HTML and Markdown export functionality
+- Streak date tracking
+- Improved project name aggregation
+- Custom backup directory support
+- Intelligent deduplication across multiple sources
+
+---
+
+## 📄 License
 
 MIT - see [LICENSE](LICENSE) for details.
+
+---
+
+## ⭐ Show Your Support
+
+If you found this useful, consider:
+- Giving it a star on GitHub ⭐
+- Sharing your wrapped on social media
+- Contributing improvements
+
+---
+
+**Built with ❤️ for the Claude Code community**
