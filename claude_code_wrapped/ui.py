@@ -37,8 +37,8 @@ def wait_for_keypress():
 
 
 def format_year_display(year: int | None) -> str:
-    """Format year for display - returns 'All Time' if year is None."""
-    return "All Time" if year is None else str(year)
+    """Format year for display - returns 'All time' if year is None."""
+    return "All time" if year is None else str(year)
 
 
 def create_dramatic_stat(value: str, label: str, subtitle: str = "", color: str = COLORS["orange"], extra_lines: list[tuple[str, str]] = None) -> Text:
@@ -494,6 +494,8 @@ def create_credits_roll(stats: WrappedStats) -> list[Text]:
         streak.append(f"              To    ", style=Style(color=COLORS["white"], bold=True))
         streak.append(f"{stats.streak_longest_end.strftime('%B %d, %Y')}\n", style=Style(color=COLORS["gray"]))
         streak.append("\n              Consistency is the key to mastery.\n", style=Style(color=COLORS["gray"]))
+        if stats.streak_current > 0:
+            streak.append(f"              Current streak: {stats.streak_current} days\n", style=Style(color=COLORS["gray"]))
         streak.append("\n\n")
         streak.append("    [ENTER]", style=Style(color=COLORS["dark"]))
         frames.append(streak)

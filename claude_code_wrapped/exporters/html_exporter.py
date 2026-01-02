@@ -935,7 +935,12 @@ def _build_credits(stats: WrappedStats, year: int | None) -> str:
             <span class="credits-value">{stats.streak_longest_end.strftime('%B %d, %Y')}</span>
         </div>
         <div style="margin-top: 20px; color: var(--gray); font-style: italic;">
-            Consistency is the key to mastery.
+            Consistency is the key to mastery.'''
+
+        if stats.streak_current > 0:
+            html += f'''<br>Current streak: {stats.streak_current} days'''
+
+        html += '''
         </div>
     </div>'''
 

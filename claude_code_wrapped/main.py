@@ -69,7 +69,7 @@ Examples:
     if args.year.lower() == "all":
         year_filter = None
         year_display = "all-time"
-        year_label = "All Time"
+        year_label = "All time"
     else:
         try:
             year_filter = int(args.year)
