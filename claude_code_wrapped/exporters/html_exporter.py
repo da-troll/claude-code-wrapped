@@ -938,7 +938,7 @@ def _build_credits(stats: WrappedStats, year: int | None) -> str:
             Consistency is the key to mastery.'''
 
         if stats.streak_current > 0:
-            html += f'''<br>Current streak: {stats.streak_current} days'''
+            html += f'''<br><br>Current streak: {stats.streak_current} days'''
 
         html += '''
         </div>

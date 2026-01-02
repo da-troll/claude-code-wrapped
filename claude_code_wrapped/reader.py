@@ -7,6 +7,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
 
+from dotenv import load_dotenv
+
+# Load .env file if it exists
+load_dotenv()
+
 
 @dataclass
 class TokenUsage:
@@ -52,6 +57,31 @@ def get_claude_dir() -> Path:
     if not claude_dir.exists():
         raise FileNotFoundError(f"Claude Code directory not found: {claude_dir}")
     return claude_dir
+
+
+def get_custom_claude_dirs() -> list[Path]:
+    """Get custom Claude Code directories from environment variables.
+
+    Supports:
+    - CLAUDE_BACKUP_DIRS: Comma-separated list of directories containing .claude folders
+    - Each directory should have the same structure as ~/.claude (with projects/, history.jsonl, etc.)
+
+    Returns:
+        List of Path objects for each valid custom directory
+    """
+    custom_dirs = []
+
+    # Check for CLAUDE_BACKUP_DIRS environment variable
+    backup_dirs_str = os.getenv("CLAUDE_BACKUP_DIRS", "")
+    if backup_dirs_str:
+        for dir_str in backup_dirs_str.split(","):
+            dir_path = Path(dir_str.strip()).expanduser()
+            if dir_path.exists() and dir_path.is_dir():
+                custom_dirs.append(dir_path)
+            else:
+                print(f"Warning: Custom directory not found: {dir_path}")
+
+    return custom_dirs
 
 
 def parse_timestamp(ts: int | str | None) -> datetime | None:
@@ -144,6 +174,38 @@ def iter_project_sessions(claude_dir: Path) -> Iterator[tuple[str, Path]]:
             yield project_dir.name, jsonl_file
 
 
+def iter_flat_sessions(flat_dir: Path) -> Iterator[tuple[str, Path]]:
+    """Iterate over JSONL files in a flat directory (no projects/ subdirectory).
+
+    Supports directories that just contain .jsonl files directly, without the
+    nested projects/[project-name]/*.jsonl structure.
+    """
+    if not flat_dir.exists() or not flat_dir.is_dir():
+        return
+
+    for jsonl_file in flat_dir.glob("*.jsonl"):
+        if jsonl_file.is_file():
+            # Use directory name as project name
+            yield flat_dir.name, jsonl_file
+
+
+def iter_projects_folder(projects_dir: Path) -> Iterator[tuple[str, Path]]:
+    """Iterate over JSONL files when pointed directly at a projects/ folder.
+
+    Supports when the directory itself IS the projects folder, containing
+    subdirectories like -Users-you-project/ with *.jsonl files inside.
+    Same as iter_project_sessions but without looking for projects/ subdirectory.
+    """
+    if not projects_dir.exists() or not projects_dir.is_dir():
+        return
+
+    for project_dir in projects_dir.iterdir():
+        if not project_dir.is_dir():
+            continue
+        for jsonl_file in project_dir.glob("*.jsonl"):
+            yield project_dir.name, jsonl_file
+
+
 def read_session_file(jsonl_path: Path) -> list[Message]:
     """Read all messages from a session JSONL file."""
     messages = []
@@ -206,34 +268,71 @@ def read_stats_cache(claude_dir: Path) -> dict | None:
         return None
 
 
-def load_all_messages(claude_dir: Path | None = None, year: int | None = None) -> list[Message]:
+def load_all_messages(claude_dir: Path | None = None, year: int | None = None,
+                      include_custom_dirs: bool = True) -> list[Message]:
     """Load all messages from all sessions, optionally filtered by year.
 
     Reads from both project session files (detailed) and history.jsonl (older data).
     Deduplicates messages by message_id to avoid counting duplicate entries
     that can occur from streaming or retries.
+
+    Args:
+        claude_dir: Main Claude directory (defaults to ~/.claude)
+        year: Filter messages by year
+        include_custom_dirs: If True, also loads from CLAUDE_BACKUP_DIRS env variable
     """
     if claude_dir is None:
         claude_dir = get_claude_dir()
 
     all_messages = []
 
-    # Read from project session files (detailed messages with token counts)
-    for project_name, jsonl_path in iter_project_sessions(claude_dir):
-        messages = read_session_file(jsonl_path)
-        all_messages.extend(messages)
+    # Collect all directories to scan
+    dirs_to_scan = [claude_dir]
+    if include_custom_dirs:
+        custom_dirs = get_custom_claude_dirs()
+        if custom_dirs:
+            print(f"Loading from {len(custom_dirs)} additional backup director{'y' if len(custom_dirs) == 1 else 'ies'}...")
+        dirs_to_scan.extend(custom_dirs)
 
-    # Also read from history.jsonl for older data that may not be in session files
-    # This captures user prompts from sessions that have been cleaned up
-    history_messages = read_history_file(claude_dir)
-    all_messages.extend(history_messages)
+    # Read from all directories
+    for scan_dir in dirs_to_scan:
+        # Detect directory structure
+        has_projects_subdir = (scan_dir / "projects").exists()
+        has_project_folders = any(
+            d.is_dir() and any(d.glob("*.jsonl"))
+            for d in scan_dir.iterdir()
+            if d.is_dir()
+        ) if scan_dir.exists() else False
+        has_jsonl_files = any(scan_dir.glob("*.jsonl")) if scan_dir.exists() else False
+
+        if has_projects_subdir:
+            # Structure 1: Standard ~/.claude with projects/ subdirectory
+            # Example: ~/.claude/projects/[project-name]/*.jsonl
+            for project_name, jsonl_path in iter_project_sessions(scan_dir):
+                messages = read_session_file(jsonl_path)
+                all_messages.extend(messages)
+            # Also read history.jsonl
+            history_messages = read_history_file(scan_dir)
+            all_messages.extend(history_messages)
+
+        elif has_project_folders:
+            # Structure 2: Directory IS a projects folder
+            # Example: ~/.claude/backups/projects/[project-name]/*.jsonl
+            for project_name, jsonl_path in iter_projects_folder(scan_dir):
+                messages = read_session_file(jsonl_path)
+                all_messages.extend(messages)
+
+        elif has_jsonl_files:
+            # Structure 3: Flat directory with *.jsonl files directly
+            # Example: ~/exported-chats/*.jsonl
+            for project_name, jsonl_path in iter_flat_sessions(scan_dir):
+                messages = read_session_file(jsonl_path)
+                all_messages.extend(messages)
 
     # Deduplicate by message_id (keep the last occurrence which has final token counts)
     seen_ids: dict[str, Message] = {}
-    unique_messages = []
-
-    # Track seen timestamps+content for history dedup (history has no message_id)
-    seen_history: set[tuple[str, str]] = set()
+    seen_content: dict[tuple, Message] = {}  # For messages without IDs
+    messages_without_timestamp = []  # Edge case: no timestamp at all
 
     for msg in all_messages:
         if msg.message_id:
@@ -243,14 +342,14 @@ def load_all_messages(claude_dir: Path | None = None, year: int | None = None) -
             # Messages without ID - deduplicate by timestamp+content hash
             if msg.timestamp:
                 key = (msg.timestamp.isoformat(), msg.content[:100] if msg.content else "")
-                if key not in seen_history:
-                    seen_history.add(key)
-                    unique_messages.append(msg)
+                # Keep LAST occurrence (overwrite previous) - matches message_id behavior
+                seen_content[key] = msg
             else:
-                unique_messages.append(msg)
+                # No timestamp - can't deduplicate, keep all (rare edge case)
+                messages_without_timestamp.append(msg)
 
-    # Add deduplicated messages
-    unique_messages.extend(seen_ids.values())
+    # Combine all deduplicated messages
+    unique_messages = list(seen_ids.values()) + list(seen_content.values()) + messages_without_timestamp
 
     # Filter by year if specified
     if year:

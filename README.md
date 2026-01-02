@@ -63,6 +63,31 @@ claude-code-wrapped --json       # Export stats as JSON
 claude-code-wrapped 2025         # View a specific year
 ```
 
+## Including Backup Directories
+
+Have Claude Code backups in Dropbox, external drives, or exported conversations? Include them:
+
+```bash
+# Create a .env file
+cp .env.example .env
+
+# Edit .env and add your backup locations (comma-separated)
+CLAUDE_BACKUP_DIRS=~/Dropbox/claude-backups/.claude,~/exported-chats
+
+# Run as normal - automatically combines all data
+claude-code-wrapped
+```
+
+**Supported directory structures (auto-detected):**
+- **Standard**: `backup-dir/projects/[project-folders]/*.jsonl` (has `projects/` subdirectory)
+- **Projects folder**: `projects/[project-folders]/*.jsonl` (IS the projects folder)
+- **Flat**: `backup-dir/*.jsonl` (JSONL files directly in directory)
+
+**Deduplication:**
+- Messages are automatically deduplicated by `message_id`
+- **Order matters**: Later directories override earlier ones for duplicates
+- List most authoritative/complete sources **last** (e.g., pre-compaction backups)
+
 ## Requirements
 
 - Python 3.12+ (with uvx, pipx, or pip)

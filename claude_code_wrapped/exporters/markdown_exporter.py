@@ -417,7 +417,7 @@ def _build_credits(stats: WrappedStats, year: int | None) -> str:
         streak += f"- **To:** {stats.streak_longest_end.strftime('%B %d, %Y')}\n"
         streak += "\n*Consistency is the key to mastery.*"
         if stats.streak_current > 0:
-            streak += f"  \n*Current streak: {stats.streak_current} days*"
+            streak += f"\n\n*Current streak: {stats.streak_current} days*"
         sections.append(streak)
 
     # Longest Conversation

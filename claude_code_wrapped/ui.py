@@ -495,7 +495,7 @@ def create_credits_roll(stats: WrappedStats) -> list[Text]:
         streak.append(f"{stats.streak_longest_end.strftime('%B %d, %Y')}\n", style=Style(color=COLORS["gray"]))
         streak.append("\n              Consistency is the key to mastery.\n", style=Style(color=COLORS["gray"]))
         if stats.streak_current > 0:
-            streak.append(f"              Current streak: {stats.streak_current} days\n", style=Style(color=COLORS["gray"]))
+            streak.append(f"\n              Current streak: {stats.streak_current} days\n", style=Style(color=COLORS["gray"]))
         streak.append("\n\n")
         streak.append("    [ENTER]", style=Style(color=COLORS["dark"]))
         frames.append(streak)

@@ -24,6 +24,7 @@ Thumbs.db
 # Environment and secrets
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 
@@ -35,3 +36,4 @@ htmlcov/
 # Local development
 *.log
 .conductor/
+CLAUDE.md
