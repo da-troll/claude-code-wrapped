@@ -1,6 +1,6 @@
 [project]
 name = "claude-wrapped"
-version = "0.1.14"
+version = "0.1.15"
 description = "Your year with Claude Code - Spotify Wrapped style terminal experience"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -9,7 +9,7 @@ authors = [
     { name = "Mert Deveci", email = "mert@banker.so" },
     { name = "Daniel Tollefsen" }
 ]
-keywords = ["claude", "anthropic", "cli", "wrapped", "stats", "terminal", "analytics", "export", "claude-code"]
+keywords = ["claude", "anthropic", "cli", "wrapped", "stats", "terminal", "analytics", "export", "claude-code", "2025", "2026", "2027"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",

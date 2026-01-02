@@ -1,6 +1,6 @@
 {
   "name": "@da-trollefsen/claude-wrapped",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Your year with Claude Code - Spotify Wrapped style terminal experience",
   "bin": {
     "claude-wrapped": "./bin/cli.js",
@@ -22,7 +22,10 @@
     "terminal",
     "claude-code",
     "analytics",
-    "export"
+    "export",
+    "2025",
+    "2026",
+    "2027"
   ],
   "author": "Mert Deveci (original), Daniel Tollefsen (fork maintainer)",
   "license": "MIT",
