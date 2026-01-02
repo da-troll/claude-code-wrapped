@@ -36,3 +36,7 @@ htmlcov/
 # Local development
 *.log
 .conductor/
+
+# Claude Code
+CLAUDE.md
+.claude/

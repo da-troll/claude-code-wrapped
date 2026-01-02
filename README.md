@@ -375,9 +375,9 @@ uv run python -m claude_code_wrapped.stats
 
 ## 👏 Credits
 
-**Original Creator:** [Mert Deveci](https://x.com/gm_mertd) - Maker of [Banker.so](https://banker.so)
-
 **Fork Maintainer:** [Daniel Tollefsen](https://github.com/da-troll)
+
+**Original Creator:** [Mert Deveci](https://x.com/gm_mertd) - Maker of [Banker.so](https://banker.so)
 
 ### Recent Enhancements
 - All-time statistics support
